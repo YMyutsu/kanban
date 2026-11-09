@@ -11,20 +11,29 @@ class KanbanViewModel extends ChangeNotifier {
     if (data == null) return;
     tasks.clear();
     for (final t in jsonDecode(data)) {
-      tasks.add(Task(t['title'], t['status']));
+      tasks.add(Task(
+        t['title'],
+        t['status'],
+        t['price'] ?? 0,
+      ));
     }
   }
 
   Future<void> save() async {
     notifyListeners();
     final data = [
-      for (final t in tasks) {'title': t.title, 'status': t.status}
+      for (final t in tasks)
+        {
+          'title': t.title,
+          'status': t.status,
+          'price': t.price,
+        }
     ];
     await prefs.setString('kanban', jsonEncode(data));
   }
 
-  void add(String text) {
-    tasks.add(Task(text));
+ void add(String text, int price) {
+    tasks.add(Task(text, 0, price));
     save();
   }
   void move(Task t, int status) {

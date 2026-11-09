@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'model.dart';
 import 'view_model.dart';
+import 'package:intl/intl.dart';
+
 
 final names = ['💗 欲しいもの (Wishlist)', '🛒 購入予定 (To Buy)', '🎁 ゲット済み (Got It)'];
 final labels = ['欲しいもの', '購入予定', 'ゲット済み'];
@@ -16,10 +18,15 @@ class KanbanView extends StatefulWidget {
 
 class _KanbanViewState extends State<KanbanView> {
   final input = TextEditingController();
+  final priceInput = TextEditingController();
 
   void add() {
-    widget.vm.add(input.text);
+    final price = int.tryParse(priceInput.text) ?? 0;
+
+    widget.vm.add(input.text, price);
+
     input.clear();
+    priceInput.clear();
   }
     Future<void> edit(Task t) async {
     var text = t.title;
@@ -65,7 +72,24 @@ class _KanbanViewState extends State<KanbanView> {
     
     return Card(child: ListTile(
       title: Text(t.title),
-      subtitle: buttons,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 8),
+
+          Text(
+            '¥${NumberFormat('#,###').format(t.price)}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.pink.shade400,
+            ),
+          ),
+
+          SizedBox(height: 8),
+          buttons,
+        ],
+      ),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         IconButton(
           icon: Icon(Icons.edit),
@@ -85,6 +109,13 @@ class _KanbanViewState extends State<KanbanView> {
       for (final t in widget.vm.tasks)
         if (t.status == s) taskCard(t),
     ];
+    int totalPrice = 0;
+
+    for (final t in widget.vm.tasks) {
+      if (t.status == s) {
+        totalPrice += t.price;
+      }
+    }
     return SizedBox(
       width: 300,
       child: Card(
@@ -94,7 +125,43 @@ class _KanbanViewState extends State<KanbanView> {
             title: Text(names[s]),
             trailing: Text('${cards.length}件'),
           ),
-          Expanded(child: ListView(children: cards)),
+
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '合計金額',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '¥${NumberFormat('#,###').format(totalPrice)}',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.pink.shade400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+Expanded(child: ListView(children: cards)),
         ]),
       ),
     );
@@ -103,6 +170,7 @@ class _KanbanViewState extends State<KanbanView> {
   @override
   void dispose() {
     input.dispose();
+    priceInput.dispose();
     super.dispose();
   }
 
@@ -116,6 +184,18 @@ class _KanbanViewState extends State<KanbanView> {
         border: OutlineInputBorder(),
       ),
     );
+      
+    final priceField = TextField(
+      controller: priceInput,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: '価格（円）',
+        hintText: '例：1200',
+        prefixIcon: Icon(Icons.currency_yen),
+        border: OutlineInputBorder(),
+      ),
+    );
+  
 
 
     final button = ValueListenableBuilder(
@@ -143,7 +223,13 @@ class _KanbanViewState extends State<KanbanView> {
       padding: EdgeInsets.all(12),
       child: Column(children: [
         field,
-        Align(alignment: Alignment.centerRight, child: button),
+        SizedBox(height: 12),
+        priceField,
+        SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: button,
+        ),
       ]),
     ));
     final board = ListenableBuilder(
